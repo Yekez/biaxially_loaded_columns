@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Biaxially Loaded RC Interaction Surface</title>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: #f7f7f7;
+      color: #222;
+    }
+
+    .wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    h1 {
+      margin-top: 0;
+      font-size: 24px;
+    }
+
+    .panel {
+      background: #fff;
+      border-radius: 10px;
+      padding: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      margin-bottom: 16px;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      align-items: end;
+    }
+
+    label {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 6px;
+    }
+
+    input,
+    select {
+      width: 100%;
+      padding: 8px 10px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+
+    button {
+      padding: 10px 14px;
+      font-size: 14px;
+      cursor: pointer;
+      border: none;
+      border-radius: 8px;
+      background: #1f6feb;
+      color: white;
+    }
+
+    button.secondary {
+      background: #444;
+    }
+
+    #plot {
+      width: 100%;
+      height: 70vh;
+      min-height: 500px;
+    }
+
+    .plot2d-slice-wrap {
+      width: 100%;
+      max-width: 920px;
+    }
+
+    #plot2d-slice {
+      width: 100%;
+      height: 420px;
+      min-height: 360px;
+    }
+
+    h2.section-title {
+      margin: 0 0 12px;
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    pre {
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: #111;
+      color: #eee;
+      padding: 12px;
+      border-radius: 8px;
+      overflow: auto;
+    }
+
+    .note {
+      font-size: 13px;
+      color: #555;
+      line-height: 1.5;
+    }
+
+    .input-summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px 28px;
+      align-items: start;
+    }
+
+    .input-summary-block h3 {
+      margin: 0 0 8px;
+      font-size: 15px;
+      font-weight: 600;
+      color: #111;
+    }
+
+    .input-summary-block dl {
+      margin: 0;
+    }
+
+    .input-summary-block dt {
+      font-size: 12px;
+      color: #666;
+      margin-top: 6px;
+    }
+
+    .input-summary-block dt:first-of-type {
+      margin-top: 0;
+    }
+
+    .input-summary-block dd {
+      margin: 0 0 2px;
+      font-size: 14px;
+    }
+
+    .input-summary-bars {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .input-summary-bars th,
+    .input-summary-bars td {
+      border: 1px solid #ddd;
+      padding: 6px 8px;
+      text-align: left;
+    }
+
+    .input-summary-bars th {
+      background: #f0f0f0;
+      font-weight: 600;
+    }
+
+    .input-summary-wide {
+      grid-column: 1 / -1;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Biaxially Loaded RC Interaction Surface</h1>
+
+    <div class="panel" id="inputSummaryPanel">
+      <h2 class="section-title">Input Data</h2>
+      <p class="note" style="margin-top: 0;">
+        Section dimensions, concrete and steel properties, and reinforcement layout for this model.
+      </p>
+      <div id="inputSummaryBody"></div>
+    </div>
+
+    <div class="panel">
+      <div class="controls">
+        <div>
+          <label for="kyMin">ky min</label>
+          <input id="kyMin" type="number" value="0.1" step="0.1" />
+        </div>
+        <div>
+          <label for="kyMax">ky max</label>
+          <input id="kyMax" type="number" value="4.0" step="0.1" />
+        </div>
+        <div>
+          <label for="kyStep">ky step</label>
+          <input id="kyStep" type="number" value="0.1" step="0.1" />
+        </div>
+        <div>
+          <label for="thetaMin">theta min (deg)</label>
+          <input id="thetaMin" type="number" value="0" step="1" />
+        </div>
+        <div>
+          <label for="thetaMax">theta max (deg)</label>
+          <input id="thetaMax" type="number" value="89" step="1" />
+        </div>
+        <div>
+          <label for="thetaStep">theta step (deg)</label>
+          <input id="thetaStep" type="number" value="1" step="1" />
+        </div>
+
+        <div>
+          <button id="plotBtn">Generate Surface</button>
+        </div>
+        <div>
+          <button id="sampleBtn" class="secondary">Run Sample Case</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div id="plot"></div>
+    </div>
+
+    <div class="panel" id="breslerPanel">
+      <h2 class="section-title">Bresler reciprocal load</h2>
+      <p class="note" style="margin-top: 0;">
+        Bresler Approximation: <strong>Click the 3D surface or scatter points above</strong> to fill M_x, M_y, N and run this check.
+      </p>
+      <div class="controls" style="margin-bottom: 12px;">
+        <div>
+          <label for="breslerPu">P (axial), kN</label>
+          <input id="breslerPu" type="number" step="any" placeholder="e.g. 800" />
+        </div>
+        <div>
+          <label for="breslerMx">M_x, kN*m</label>
+          <input id="breslerMx" type="number" step="any" value="0" />
+        </div>
+        <div>
+          <label for="breslerMy">M_y, kN*m</label>
+          <input id="breslerMy" type="number" step="any" value="0" />
+        </div>
+        <div>
+          <button type="button" id="breslerBtn">Evaluate Bresler</button>
+        </div>
+      </div>
+      <p id="breslerOut" class="note" style="margin-bottom: 0;">Enter loads and click Evaluate, click the 3D graph, or generate the surface first.</p>
+    </div>
+
+    <div class="panel">
+      <h2 class="section-title">2D slice through surface</h2>
+      <p class="note" style="margin-top: 0;">
+        Keep one of M_x, M_y, or N near a target value (band half width = tolerance). The chart plots the other two coordinates for all surface points in that band. Leave tolerance empty for an automatic band from the data range. Finer ky and theta steps give smoother slices.
+      </p>
+      <div class="controls" style="margin-bottom: 12px;">
+        <div>
+          <label for="sliceMode">What is fixed</label>
+          <select id="sliceMode" aria-label="Slice mode">
+            <option value="fixedMx">M_x fixed -> M_y vs N</option>
+            <option value="fixedMy">M_y fixed -> M_x vs N</option>
+            <option value="fixedN">N fixed -> M_x vs M_y</option>
+          </select>
+        </div>
+        <div>
+          <label for="sliceValue">Target value (same units as fixed quantity)</label>
+          <input id="sliceValue" type="number" step="any" placeholder="median if empty" />
+        </div>
+        <div>
+          <label for="sliceTol">Tolerance (half width) empty = auto</label>
+          <input id="sliceTol" type="number" step="any" min="0" placeholder="auto" />
+        </div>
+      </div>
+      <div class="plot2d-slice-wrap">
+        <div id="plot2d-slice" aria-label="Interaction slice"></div>
+      </div>
+      <p id="sliceMeta" class="note" style="margin-top: 12px; margin-bottom: 0;"></p>
+    </div>
+
+    <div class="panel" id="sampleOutputPanel">
+      <h2>Sample Case Output</h2>
+      <p class="note">
+        Sample case uses ky = 176.5 / 300 and theta = 26.6 degrees.
+      </p>
+      <pre id="output">Click "Run Sample Case" to see detailed results.</pre>
+    </div>
+  </div>
+
+  <script src="concrete_geometry.js"></script>
+  <script src="solver_helper.js"></script>
+  <script src="bresler.js"></script>
+  <script src="solver.js"></script>
+  <script>
+    const Solver = window.RCSolver;
+
+    function escapeHtml(text) {
+      return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+    }
+
+    function renderInputSummary() {
+      const s = Solver.section;
+      const bars = Solver.barsTopLeft || [];
+      const body = document.getElementById("inputSummaryBody");
+      if (!body || !s) return;
+
+      function block(title, pairs) {
+        let h = '<div class="input-summary-block"><h3>' + escapeHtml(title) + "</h3><dl>";
+        for (let i = 0; i < pairs.length; i++) {
+          h +=
+            "<dt>" +
+            escapeHtml(pairs[i][0]) +
+            "</dt><dd>" +
+            escapeHtml(pairs[i][1]) +
+            "</dd>";
+        }
+        h += "</dl></div>";
+        return h;
+      }
+
+      const parts = [
+        block("Section geometry", [
+          ["b (mm)", String(s.b)],
+          ["h (mm)", String(s.h)],
+          ["Cover to bar center (mm)", String(s.coverToBarCenter)],
+          ["Bar diameter phi (mm)", String(s.phi)],
+          ["As per bar (mm2)", s.As.toFixed(1)],
+          ["Section shape", "Rectangle: origin bottom-left, x right, y up"]
+        ]),
+        block("Concrete", [
+          ["f_ck (MPa)", String(s.fck)],
+          ["alpha", String(s.alpha)],
+          ["f_cd = alpha * f_ck (MPa)", String(s.fcd)],
+          ["k1 (equivalent block depth factor)", String(s.k1)],
+          ["epsilon_cu", String(s.epsCu)]
+        ]),
+        block("Steel", [
+          ["f_yd (MPa)", String(s.fyd)],
+          ["E_s (MPa)", String(s.Es)]
+        ])
+      ];
+
+      let table =
+        '<div class="input-summary-block input-summary-wide"><h3>Bar coordinates (mm)</h3><table class="input-summary-bars"><thead><tr><th>Bar</th><th>x (centroid CS)</th><th>y (centroid CS)</th><th>X (BL, y up)</th><th>Y (BL, y up)</th></tr></thead><tbody>';
+      for (let j = 0; j < bars.length; j++) {
+        const b = bars[j];
+        table +=
+          "<tr><td>" +
+          escapeHtml(b.name) +
+          "</td><td>" +
+          b.x +
+          "</td><td>" +
+          b.y +
+          "</td><td>" +
+          b.X +
+          "</td><td>" +
+          b.Y +
+          "</td></tr>";
+      }
+      table += "</tbody></table></div>";
+
+      body.innerHTML =
+        '<div class="input-summary">' + parts.join("") + table + "</div>";
+    }
+
+    renderInputSummary();
+
+    let lastInteractionResults = [];
+
+    function medianOf(values) {
+      if (!values.length) return 0;
+      const s = values.slice().sort(function (a, b) { return a - b; });
+      const m = Math.floor(s.length / 2);
+      return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+    }
+
+    function suggestedFixedValue(results, mode) {
+      if (!results || !results.length) return 0;
+      if (mode === "fixedMx") return medianOf(results.map(function (r) { return r.Mx_kNm; }));
+      if (mode === "fixedMy") return medianOf(results.map(function (r) { return r.My_kNm; }));
+      return medianOf(results.map(function (r) { return r.N_kN; }));
+    }
+
+    function autoTolerance(results, mode, fixedVal) {
+      if (!results || !results.length) return 1;
+      let key = "N_kN";
+      if (mode === "fixedMx") key = "Mx_kNm";
+      else if (mode === "fixedMy") key = "My_kNm";
+      const arr = results.map(function (r) { return r[key]; });
+      const lo = Math.min.apply(null, arr);
+      const hi = Math.max.apply(null, arr);
+      const span = Math.max(hi - lo, 1e-9);
+      return Math.max(span * 0.02, Math.abs(fixedVal) * 0.02, 0.25);
+    }
+
+    function parseSliceTolerance(results, mode, fixedVal, raw) {
+      const t = Number(String(raw).trim());
+      if (Number.isFinite(t) && t > 0) return t;
+      return autoTolerance(results, mode, fixedVal);
+    }
+
+    // Mesh only where the ky-theta grid has valid points with N >= 0.
+    // Add quads only when all four corners exist so missing points do not break indexing.
+    function triangulateGrid(results) {
+      const x = [];
+      const y = [];
+      const z = [];
+      const customdata = [];
+      const i = [];
+      const j = [];
+      const k = [];
+
+      if (!results || !results.length) {
+        return { x, y, z, customdata, i, j, k };
+      }
+
+      const pointMap = new Map();
+      for (let n = 0; n < results.length; n++) {
+        const r = results[n];
+        if (!(r.N_kN >= 0)) continue;
+        pointMap.set(String(r.ky) + "\t" + String(r.thetaDeg), r);
+      }
+
+      const kySet = {};
+      const thSet = {};
+      for (let n = 0; n < results.length; n++) {
+        const r = results[n];
+        if (!(r.N_kN >= 0)) continue;
+        kySet[r.ky] = true;
+        thSet[r.thetaDeg] = true;
+      }
+
+      const uniqueKy = Object.keys(kySet)
+        .map(Number)
+        .sort(function (a, b) {
+          return a - b;
+        });
+      const uniqueTheta = Object.keys(thSet)
+        .map(Number)
+        .sort(function (a, b) {
+          return a - b;
+        });
+
+      const nRows = uniqueKy.length;
+      const nCols = uniqueTheta.length;
+
+      if (nRows < 2 || nCols < 2) {
+        return { x, y, z, customdata, i, j, k };
+      }
+
+      const vertexId = [];
+      for (let r = 0; r < nRows; r++) {
+        vertexId[r] = [];
+        for (let c = 0; c < nCols; c++) {
+          vertexId[r][c] = -1;
+        }
+      }
+
+      for (let r = 0; r < nRows; r++) {
+        for (let c = 0; c < nCols; c++) {
+          const p = pointMap.get(String(uniqueKy[r]) + "\t" + String(uniqueTheta[c]));
+          if (!p || !(p.N_kN >= 0)) continue;
+          vertexId[r][c] = x.length;
+          x.push(p.Mx_kNm);
+          y.push(p.My_kNm);
+          z.push(p.N_kN);
+          customdata.push([p.ky, p.thetaDeg]);
+        }
+      }
+
+      for (let r = 0; r < nRows - 1; r++) {
+        for (let c = 0; c < nCols - 1; c++) {
+          const v00 = vertexId[r][c];
+          const v10 = vertexId[r + 1][c];
+          const v01 = vertexId[r][c + 1];
+          const v11 = vertexId[r + 1][c + 1];
+          if (v00 < 0 || v10 < 0 || v01 < 0 || v11 < 0) continue;
+          i.push(v00);
+          j.push(v10);
+          k.push(v01);
+          i.push(v10);
+          j.push(v11);
+          k.push(v01);
+        }
+      }
+
+      return { x, y, z, customdata, i, j, k };
+    }
+
+    function draw(results) {
+      if (results && results.length) {
+        lastInteractionResults = results;
+      }
+
+      const mesh = triangulateGrid(results);
+
+      const axisFmt = { tickformat: ".2f", hoverformat: ".2f" };
+      const posResults = results.filter(function (r) {
+        return r.N_kN >= 0;
+      });
+      const data = [];
+      if (mesh.x.length > 0 && mesh.i.length > 0) {
+        data.push({
+          type: "mesh3d",
+          x: mesh.x,
+          y: mesh.y,
+          z: mesh.z,
+          i: mesh.i,
+          j: mesh.j,
+          k: mesh.k,
+          customdata: mesh.customdata,
+          opacity: 0.75,
+          name: "Interaction Surface",
+          hovertemplate:
+            "M_x %{x:.2f} kN*m<br>M_y %{y:.2f} kN*m<br>N %{z:.2f} kN<br>ky %{customdata[0]:.2f}<br>theta %{customdata[1]:.2f} deg<extra></extra>"
+        });
+      }
+      data.push({
+        type: "scatter3d",
+        mode: "markers",
+        x: posResults.map(r => r.Mx_kNm),
+        y: posResults.map(r => r.My_kNm),
+        z: posResults.map(r => r.N_kN),
+        customdata: posResults.map(r => [r.ky, r.thetaDeg]),
+        marker: { size: 2 },
+        name: "Computed States",
+        hovertemplate:
+          "M_x %{x:.2f} kN*m<br>M_y %{y:.2f} kN*m<br>N %{z:.2f} kN<br>ky %{customdata[0]:.2f}<br>theta %{customdata[1]:.2f} deg<extra></extra>"
+      });
+
+      const layout = {
+        title: "Biaxial Interaction Surface",
+        scene: {
+          xaxis: Object.assign({}, axisFmt, { title: "M_x (kN*m)" }),
+          yaxis: Object.assign({}, axisFmt, { title: "M_y (kN*m)" }),
+          zaxis: Object.assign({}, axisFmt, { title: "N (kN)" })
+        },
+        margin: { l: 0, r: 0, t: 40, b: 0 }
+      };
+
+      const plotGd = document.getElementById("plot");
+      const plotPromise = Plotly.newPlot(plotGd, data, layout, { responsive: true });
+      if (plotPromise && typeof plotPromise.then === "function") {
+        plotPromise.then(function () {
+          attachPlot3dBreslerClick(plotGd);
+        });
+      } else {
+        attachPlot3dBreslerClick(plotGd);
+      }
+    }
+
+    function readPlotly3dClickXYZ(pt, plotGd) {
+      let x = Number(pt.x);
+      let y = Number(pt.y);
+      let z = Number(pt.z);
+      if ([x, y, z].every(Number.isFinite)) {
+        return { x: x, y: y, z: z };
+      }
+      const tr =
+        plotGd &&
+        plotGd.data &&
+        pt.curveNumber != null &&
+        plotGd.data[pt.curveNumber];
+      const i = pt.pointNumber;
+      if (!tr || i == null || !tr.x || !tr.y || !tr.z) return null;
+      x = Number(tr.x[i]);
+      y = Number(tr.y[i]);
+      z = Number(tr.z[i]);
+      if ([x, y, z].every(Number.isFinite)) return { x: x, y: y, z: z };
+      return null;
+    }
+
+    function evaluateBreslerFromForm() {
+      const out = document.getElementById("breslerOut");
+      const r = lastInteractionResults;
+      if (!r || !r.length) {
+        out.textContent = "Generate the interaction surface first.";
+        return;
+      }
+      const Pu = Number(document.getElementById("breslerPu").value);
+      const Mx = Number(document.getElementById("breslerMx").value);
+      const My = Number(document.getElementById("breslerMy").value);
+      const res = Solver.breslerReciprocalKN(r, Pu, Mx, My);
+      out.textContent = formatBreslerResult(res);
+    }
+
+    function attachPlot3dBreslerClick(plotGd) {
+      if (!plotGd || typeof plotGd.on !== "function") return;
+      if (!plotGd._breslerPlot3dHandler) {
+        plotGd._breslerPlot3dHandler = function (ev) {
+          const gd = ev.currentTarget || plotGd;
+          if (!ev.points || !ev.points.length) return;
+          const coords = readPlotly3dClickXYZ(ev.points[0], gd);
+          if (!coords) return;
+          document.getElementById("breslerMx").value = String(coords.x);
+          document.getElementById("breslerMy").value = String(coords.y);
+          document.getElementById("breslerPu").value = String(coords.z);
+          evaluateBreslerFromForm();
+        };
+      }
+      if (typeof plotGd.removeListener === "function") {
+        plotGd.removeListener("plotly_click", plotGd._breslerPlot3dHandler);
+      } else if (typeof plotGd.removeAllListeners === "function") {
+        plotGd.removeAllListeners("plotly_click");
+      }
+      plotGd.on("plotly_click", plotGd._breslerPlot3dHandler);
+    }
+
+    function drawSlice(results) {
+      const el = document.getElementById("plot2d-slice");
+      const meta = document.getElementById("sliceMeta");
+
+      if (results && results.length) {
+        lastInteractionResults = results;
+      }
+
+      const r = lastInteractionResults;
+      if (!r || !r.length) {
+        if (el && el.data) Plotly.purge(el);
+        if (meta) meta.textContent = "Generate a surface first.";
+        return;
+      }
+
+      const mode = document.getElementById("sliceMode").value;
+      const rawVal = document.getElementById("sliceValue").value.trim();
+      const suggested = suggestedFixedValue(r, mode);
+      let fixedVal = rawVal === "" ? suggested : Number(rawVal);
+      if (!Number.isFinite(fixedVal)) fixedVal = suggested;
+
+      const tol = parseSliceTolerance(r, mode, fixedVal, document.getElementById("sliceTol").value);
+
+      const picked = [];
+      for (let i = 0; i < r.length; i++) {
+        const pt = r[i];
+        let delta;
+        if (mode === "fixedMx") delta = Math.abs(pt.Mx_kNm - fixedVal);
+        else if (mode === "fixedMy") delta = Math.abs(pt.My_kNm - fixedVal);
+        else delta = Math.abs(pt.N_kN - fixedVal);
+        if (delta <= tol) picked.push(pt);
+      }
+
+      let sortKey;
+      let xKey;
+      let yKey;
+      let xTitle;
+      let yTitle;
+      let fixedLabel;
+
+      if (mode === "fixedMx") {
+        sortKey = "My_kNm";
+        xKey = "My_kNm";
+        yKey = "N_kN";
+        xTitle = "M_y (kN*m)";
+        yTitle = "N (kN)";
+        fixedLabel = "M_x";
+      } else if (mode === "fixedMy") {
+        sortKey = "Mx_kNm";
+        xKey = "Mx_kNm";
+        yKey = "N_kN";
+        xTitle = "M_x (kN*m)";
+        yTitle = "N (kN)";
+        fixedLabel = "M_y";
+      } else {
+        sortKey = "thetaDeg";
+        xKey = "Mx_kNm";
+        yKey = "My_kNm";
+        xTitle = "M_x (kN*m)";
+        yTitle = "M_y (kN*m)";
+        fixedLabel = "N";
+      }
+
+      picked.sort(function (a, b) {
+        const av = a[sortKey];
+        const bv = b[sortKey];
+        if (av !== bv) return av - bv;
+        return a[xKey] - b[xKey];
+      });
+
+      const xs = picked.map(function (p) { return p[xKey]; });
+      const ys = picked.map(function (p) { return p[yKey]; });
+      const axisFmt = { tickformat: ".2f", hoverformat: ".2f" };
+
+      const title =
+        (mode === "fixedMx" ? "M_y-N" : mode === "fixedMy" ? "M_x-N" : "M_x-M_y") +
+        " slice (" +
+        fixedLabel +
+        " ~ " +
+        fixedVal.toFixed(2) +
+        ", ±" +
+        tol.toFixed(3) +
+        ")";
+
+      const hover = picked.map(function (p) {
+        return (
+          xTitle.replace(/\s*\(.*$/, "") +
+          " " +
+          p[xKey].toFixed(2) +
+          "<br>" +
+          yTitle.replace(/\s*\(.*$/, "") +
+          " " +
+          p[yKey].toFixed(2) +
+          "<br>M_x " +
+          p.Mx_kNm.toFixed(2) +
+          " M_y " +
+          p.My_kNm.toFixed(2) +
+          "<br>N " +
+          p.N_kN.toFixed(2) +
+          " kN<br>ky " +
+          p.ky.toFixed(2) +
+          "<br>theta " +
+          p.thetaDeg.toFixed(2) +
+          " deg"
+        );
+      });
+
+      const trace = {
+        type: "scatter",
+        mode: "lines+markers",
+        x: xs,
+        y: ys,
+        line: { width: 2, color: "#1f6feb" },
+        marker: { size: 7, color: "#1f6feb" },
+        text: hover,
+        hovertemplate: "%{text}<extra></extra>",
+        name: "Slice"
+      };
+
+      const layout = {
+        title: title,
+        xaxis: Object.assign({ title: xTitle }, axisFmt),
+        yaxis: Object.assign({ title: yTitle }, axisFmt),
+        margin: { l: 56, r: 24, t: 48, b: 48 },
+        hovermode: "closest",
+        showlegend: false
+      };
+
+      if (meta) {
+        if (!picked.length) {
+          meta.textContent =
+            "No points in band - change target, tolerance, or regenerate with a denser grid.";
+        } else {
+          meta.textContent =
+            picked.length +
+            " point(s) in band. Half-width " +
+            tol.toFixed(4) +
+            (document.getElementById("sliceTol").value.trim() === "" ? " (auto)" : "") +
+            ".";
+        }
+      }
+
+      if (!picked.length) {
+        const layoutEmpty = {
+          title: title,
+          annotations: [
+            {
+              xref: "paper",
+              yref: "paper",
+              x: 0.5,
+              y: 0.5,
+              text: "No points in this band",
+              showarrow: false,
+              font: { size: 14, color: "#555" }
+            }
+          ],
+          xaxis: { visible: false, range: [0, 1] },
+          yaxis: { visible: false, range: [0, 1] },
+          margin: { l: 40, r: 40, t: 48, b: 40 }
+        };
+        Plotly.newPlot("plot2d-slice", [], layoutEmpty, {
+          responsive: true,
+          displayModeBar: false
+        });
+        return;
+      }
+
+      Plotly.newPlot("plot2d-slice", [trace], layout, {
+        responsive: true,
+        displayModeBar: true
+      });
+    }
+
+    function roundDecimals(value, decimals) {
+      if (typeof value !== "number" || !Number.isFinite(value)) return value;
+      return Number(value.toFixed(decimals));
+    }
+
+    function jsonRoundNumbers(key, value) {
+      return roundDecimals(value, 2);
+    }
+
+    function formatSample(state) {
+      if (!state) return "Sample case invalid.";
+
+      const payload = {
+        input: {
+          ky: state.ky,
+          thetaDeg: state.thetaDeg
+        },
+        geometry: {
+          kyh_mm: state.kyh,
+          c_mm: state.c,
+          a_mm: state.a,
+          compressionPolygon: state.concrete.polygon
+        },
+        concrete: {
+          area_mm2: state.concrete.Ac,
+          force_kN: state.concrete.Nc / 1000,
+          centroidSection: state.concrete.centroidSection,
+          centroidCenter: state.concrete.centroidCenter,
+          Mx_kNm: state.concrete.Mxc / 1e6,
+          My_kNm: state.concrete.Myc / 1e6
+        },
+        steel: {
+          force_kN: state.steel.Ns / 1000,
+          Mx_kNm: state.steel.Mxs / 1e6,
+          My_kNm: state.steel.Mys / 1e6,
+          bars: state.steel.bars.map(b => ({
+            name: b.name,
+            d_mm: b.d,
+            epsS: b.epsS,
+            sigmaS_MPa: b.sigmaS,
+            Fs_kN: b.Fs / 1000
+          }))
+        },
+        total: {
+          N_kN: state.N / 1000,
+          Mx_kNm: state.Mx / 1e6,
+          My_kNm: state.My / 1e6
+        }
+      };
+
+      return JSON.stringify(payload, jsonRoundNumbers, 2);
+    }
+
+    function formatBreslerResult(res) {
+      if (!res.ok) {
+        return res.error || "Could not evaluate Bresler expression.";
+      }
+      return (
+        "P0 (max N on current surface) = " +
+        res.Po.toFixed(2) +
+        " kN\n" +
+        "Pnx at |ex| = " +
+        Math.abs(res.ex_m).toFixed(4) +
+        " m -> " +
+        res.Pnx.toFixed(2) +
+        " kN\n" +
+        "Pny at |ey| = " +
+        Math.abs(res.ey_m).toFixed(4) +
+        " m -> " +
+        res.Pny.toFixed(2) +
+        " kN\n" +
+        "Pn (Bresler) = " +
+        res.PnBresler.toFixed(2) +
+        " kN\n" +
+        "Applied P = " +
+        res.Pu.toFixed(2) +
+        " kN - " +
+        (res.demandOk
+          ? "P <= Pn (satisfies reciprocal approximation at nominal level)."
+          : "P > Pn (outside reciprocal approximation).")
+      );
+    }
+
+    document.getElementById("breslerBtn").addEventListener("click", function () {
+      evaluateBreslerFromForm();
+    });
+
+    document.getElementById("plotBtn").addEventListener("click", function () {
+      const kyMin = Number(document.getElementById("kyMin").value);
+      const kyMax = Number(document.getElementById("kyMax").value);
+      const kyStep = Number(document.getElementById("kyStep").value);
+      const thetaMin = Number(document.getElementById("thetaMin").value);
+      const thetaMax = Number(document.getElementById("thetaMax").value);
+      const thetaStep = Number(document.getElementById("thetaStep").value);
+
+      const results = Solver.generateInteractionResults({
+        kyMin: kyMin,
+        kyMax: kyMax,
+        kyStep: kyStep,
+        thetaMin: thetaMin,
+        thetaMax: thetaMax,
+        thetaStep: thetaStep
+      });
+
+      draw(results);
+      drawSlice(results);
+      document.getElementById("output").textContent =
+        "Generated " + results.length + " valid states.";
+    });
+
+    document.getElementById("sampleBtn").addEventListener("click", function () {
+      const ky = 176.5 / 300;
+      const thetaDeg = 26.6;
+      const state = Solver.solveSectionState(ky, thetaDeg);
+      document.getElementById("output").textContent = formatSample(state);
+      document.getElementById("sampleOutputPanel").scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
+    });
+
+    const initialResults = Solver.generateInteractionResults();
+    document.getElementById("sliceValue").value = Number(
+      suggestedFixedValue(
+        initialResults,
+        document.getElementById("sliceMode").value
+      ).toFixed(4)
+    );
+    draw(initialResults);
+    drawSlice(initialResults);
+
+    document.getElementById("sliceMode").addEventListener("change", function () {
+      const r = lastInteractionResults;
+      if (r && r.length) {
+        const v = suggestedFixedValue(r, document.getElementById("sliceMode").value);
+        document.getElementById("sliceValue").value = Number(v.toFixed(4));
+      }
+      drawSlice();
+    });
+
+    document.getElementById("sliceValue").addEventListener("change", function () {
+      drawSlice();
+    });
+    document.getElementById("sliceTol").addEventListener("change", function () {
+      drawSlice();
+    });
+  </script>
+</body>
+</html>
